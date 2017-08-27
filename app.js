@@ -5,7 +5,7 @@ var express = require('express');
 var app = express();
 var serv = require('http').Server(app);
 var io = require('socket.io')(serv,{});
-var SAT = require('sat');
+//var SAT = require('sat');
 
 app.get('/',function(req, res) {
 	res.sendFile(__dirname + '/client/index.html');
