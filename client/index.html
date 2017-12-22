@@ -1,54 +1,81 @@
 <head>
 	<link rel="stylesheet" href="/client/css/main.css" />
-	<meta name="viewport" content="width=device-width,initial-scale=1.0">
-	<title>CubeJump.io</title>
-<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-<script>
-  (adsbygoogle = window.adsbygoogle || []).push({
-    google_ad_client: "ca-pub-5016026564626619",
-    enable_page_level_ads: true
-  });
-</script>
+	<title>Cuadrad.io</title>
+	<meta name="viewport" content="width=device-width,initial-scale=1.0, user-scalable=yes">
+	<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+	<script>
+		(adsbygoogle = window.adsbygoogle || []).push({
+			google_ad_client: "ca-pub-5016026564626619",
+			enable_page_level_ads: true
+		});
+	</script>
 </head>
 <body>
 <div id="startMenuBackground">
 </div>
+<div id="container">
+	<div id="blackBackground">
+	</div>
+</div>
 <div id="startMenu">
-	<p>Alpha Testing</p>
+	<p>Cuadrad.io</p>
 	<input type="text" tabindex="0" autofocus placeholder="Enter your name here" id="nickname" maxlength="15" /><br>
 	<button id="startButton">Play as guest</button><br>
 	<button class="loginBtn loginBtn--facebook">Login with Facebook</button>
 	<button class="loginBtn loginBtn--google">Login with Google</button>
 </div>
-<div id="gameDiv" style="display:none;">
+<div id="gameDiv" style="display:none">
 	<div id="game">
 		<canvas id="canvas" style="position:absolute;border:0px solid #000000;"></canvas>
 		<canvas id="ctx-ui" style="position:absolute;border:0px solid #000000;"></canvas>
-		<div id="status"><span class="title">Leaderboard</span></div>
 	</div>
 </div>
-
-<!--<script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>-->
+<div id="status"><span class="title">Leaderboard</span></div>
+<script src="//code.jquery.com/jquery-2.2.0.min.js"></script>
 <script src="/client/socket.js"></script>
+<script src="/client/SAT.js"></script>
 <script>
-
+	
 	var leaderboard = [];
 
 	var canvas = document.getElementById("canvas");
 	canvas.width  = window.innerWidth;
 	canvas.height = window.innerHeight;
     document.body.scrollTop = 0;
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = 'visible';
 	
 	var cvsUI = document.getElementById("ctx-ui");
 	cvsUI.width  = window.innerWidth;
 	cvsUI.height = window.innerHeight;
-    document.body.scrollTop = 0;
-    document.body.style.overflow = 'hidden';
 	
-	// 
 	var WIDTH = canvas.width;
 	var HEIGHT = canvas.height;
+
+	var playerConfig = {
+		border: 6,
+		textBorder: '#000000',
+		textBorderSize: 3,
+		defaultSize: 30
+	};
+	
+	var V = SAT.Vector;
+	var P = SAT.Polygon;
+	var B = SAT.Box;
+	
+	P.prototype.draw = function (ctx) {
+		var points = this.points;
+		var i = points.length;
+
+		ctx.save();
+		ctx.translate(this.pos.x, this.pos.y);
+		ctx.beginPath();
+		ctx.moveTo(points[0].x, points[0].y);
+		while (i--) ctx.lineTo(points[i].x, points[i].y);
+		ctx.closePath();
+		ctx.fill();
+		ctx.restore();
+	};
+	
 	var socket = io();
 	
 	//Start Menu
@@ -62,19 +89,73 @@
 	socket.on('startGameResponse',function(data){
 		startMenu.style.display = 'none';
 		startMenuBackground.style.display = 'none';
-		gameDiv.style.display = 'inline-block';
+		gameDiv.style.display = 'inline';
+		
+	});
+	
+	socket.on('resize',function(){
+		resize();
 	});
 	
 	socket.on('gameOver',function(){
-		startMenu.style.display = 'block';
+		window.setTimeout(fadeIn,3000);
+		blackBackground.style.display = 'inline';
 	});
 	
+	var fadeIn = function(){
+		startMenu.style.display = 'block';
+	}
 	
 	//game
 	var ctx = document.getElementById("canvas").getContext("2d");
 	var ctxUi = document.getElementById("ctx-ui").getContext("2d");
 	ctxUi.font = '30px Arial';
-
+	
+	var updateScale = function(player){
+		ctx.translate(WIDTH/2,HEIGHT/2);
+		ctx.scale(1/player.scale,1/player.scale);
+		player.scale = player.width * -0.0005123+ 1.0122952;
+		ctx.scale(player.scale,player.scale);
+		ctx.translate(-WIDTH/2,-HEIGHT/2);
+	}
+	
+	var getSATWidthHeight = function(player){
+		var width = player.width * 2;
+		var height = width;
+		var wth;
+		var hgt;
+			
+		if(player.launching){
+			wth = width;
+			hgt = height;
+		}else if((player.dir == 'left' && ((player.deg < -90 && player.deg >= -180) || (player.deg >= 180 && player.deg < 270))) || (player.dir == 'right' && ((player.deg <= -90 && player.deg > -180) || (player.deg > 180 && player.deg <= 270)))){
+			wth = width;
+			hgt = height;
+		}else if((player.dir == 'left' && ((player.deg < -180 && player.deg >= -270) || (player.deg >= 90 && player.deg < 180))) || (player.dir == 'right' && ((player.deg <= -180 && player.deg > -270) || (player.deg > 90 && player.deg <= 180)))){
+			wth = -width;
+			hgt = height;
+		}else if((player.dir == 'left' && (((player.deg < -270 && player.deg >= -360) || player.deg == 0) || ((player.deg >= 0 && player.deg < 90) || player.deg == 360))) || (player.dir == 'right' && ((player.deg <= -270 && player.deg > -360) || (player.deg > 0 && player.deg <= 90)))){
+			wth = -width;
+			hgt = -height;
+		}else if((player.dir == 'left' && ((player.deg < 0 && player.deg >= -90) || (player.deg >= 270 && player.deg < 360))) || (player.dir == 'right' && ((player.deg <= 0) || (player.deg > 270 && player.deg <= 360)))){
+			wth = width;
+			hgt = -height;
+		}
+		return {wth, hgt};
+	}
+	
+	var getSATBox = function(self,x,y){
+		let {wth, hgt} = getSATWidthHeight(self);
+		self.pointer = new B(new V(x + self.width, y + self.height), wth,hgt).toPolygon();
+		if(self.launching)
+			self.pointer.translate(-self.width,-self.height);
+		self.pointer.rotate(self.deg *  Math.PI/180);
+		if(self.launching)
+			self.pointer.translate(-self.width,-self.height);
+		self.pointer.translate(self.num*self.width*2,0);
+		self.pointer.translate(-self.offsetX*self.width*2,0);
+		return self.pointer;
+	}
 	
 	var Player = function(initPack){
 		var self = {};
@@ -84,54 +165,101 @@
 		self.y = initPack.y;
 		self.score = initPack.score;
 		self.deg = initPack.deg;
+		self.lastDeg = initPack.lastDeg;
 		self.gameOver = initPack.gameOver;
 		self.width = initPack.width;
+		self.oldWidth = self.width;
 		self.height = initPack.height;
 		self.color = initPack.color;
 		self.username = initPack.username;
-		self.scale = initPack.scale;
+		self.scale = 1;
+		self.dir = initPack.dir;
+		self.num = initPack.num;
+		self.offsetX = initPack.offsetX;
+		self.oldX = self.x;
+		self.launching = initPack.launching;
+		self.pressingRight = initPack.pressingRight;
+		self.pressingLeft = initPack.pressingLeft;
+		self.lastDir = initPack.lastDir;
+		self.landed = initPack.landed;
+		self.dist = 0;
+		self.launched = initPack.launched;
+		self.nameOffset = initPack.nameOffset;
+		self.pressingSpace = initPack.pressingSpace;
+		self.offset = initPack.offset;
+		self.pointer;
+		
+		updateScale(self);
 		
 		self.draw = function(){
 		
 			if(self.gameOver)
 				return;
 				
+			var w = canvas.clientWidth;
+			var h = canvas.clientHeight;
+				
 			var x = self.x - Player.list[selfId].x + WIDTH/2;
 			var y = self.y - Player.list[selfId].y + HEIGHT/2;
+					
+			var width = self.width*2;
+			var height = self.height*2;
 			
+			let {wth, hgt} = getRotatedWidthHeight(self);
 			
-			var width = self.width*self.scale;
-			var height = self.height*self.scale;
-			
-		//	ctx.fillStyle = 'white';
-		//	ctx.fillRect(WIDTH/2-width/2,HEIGHT/2-height/2,width,height);
-		// use this to see how much it goes into the ground.
+			//ctx.fillStyle = "red";
+			//getSATBox(self,x,y).draw(ctx);
 			
 			ctx.save();
-			ctx.translate(x-width/2,y-height/2);
-			ctx.translate(width/2,self.height/2);
-			ctx.fillStyle = 'white';
-			ctx.fillText(self.username,0,0);
-			ctx.rotate(self.deg * Math.PI/180);
+			if(self.launching)
+				ctx.translate(-width/2,-height/2);
+			ctx.translate(x + width/2,y + height/2);
+			ctx.translate(-self.offsetX*self.width*2,0);
+			ctx.translate(self.num*width,0);
+			ctx.rotate(self.deg *  Math.PI/180);
 			ctx.globalAlpha = 0.25;
 			ctx.strokeStyle = self.color;
 			ctx.fillStyle = self.color;
-			ctx.fillRect(-width/2,-height/2,width,height);
+			ctx.fillRect(wth,hgt,width,height);
 			ctx.globalAlpha = 1.0;
 			ctx.lineWidth = 3;
-			ctx.strokeRect(-width/2,-height/2,width,height);
+			ctx.strokeRect(wth,hgt,width,height);
+	//		ctx.fillRect(0,0,10,10);
 			ctx.restore();
 			
-		//	ctx.fillStyle = 'white';
-		//	ctx.fillRect(WIDTH/2+self.x,HEIGHT/2+262-self.y,width,height);
+			ctx.save();
+			ctx.translate(x,y);
+			ctx.translate(-self.offsetX*width,0);
+			var fontSize = self.width * 0.1273 + 6.9448;
+			ctx.textAlign="center";
+			ctx.fillStyle = 'white';
+			ctx.lineWidth = playerConfig.textBorderSize;
+			ctx.strokeStyle = playerConfig.textBorder;
+			ctx.miterLimit = 1;
+			ctx.lineJoin = 'round';
+			ctx.textBaseline = 'middle';
+			ctx.font = 'bold ' + fontSize + 'px sans-serif';
+			if(self.launching){
+				ctx.translate(self.num*width,0);
+			}else{
+				ctx.translate(self.nameOffset*width,0);
+			}
+			ctx.fillText(self.username,0,0);
+			//ctx.fillText(x,0,0);
+			ctx.restore();
+			
+			ctx.fillStyle = 'white';
+			//ctx.fillRect(1000,250,width, height);
 		//	ctx.fillRect(WIDTH/2-width/2,HEIGHT/2-3/4*width,width,height);
-		
-		//	ctx.fillText(self.y,self.x,self.y-60);
+	
+		}
+		self.getXY = function(){
+			var x = self.x - Player.list[selfId].x + WIDTH/2;
+			var y = self.y - Player.list[selfId].y + HEIGHT/2;
+			return {x,y};
 		}
 		
-		Player.list[self.id] = self;
-		
-		
+		Player.list[self.id] = self;		
 		return self;
 	}
 	Player.list = {};
@@ -146,11 +274,15 @@
 		self.width = initPack.width;
 		
 		self.draw = function(){
-			var width = self.width * Player.list[selfId].scale/2;
-			var height = self.width * Player.list[selfId].scale/2;
+			var width = self.width * Player.list[selfId].scale;
+			var height = self.width * Player.list[selfId].scale;
 			
 			var x = self.x - Player.list[selfId].x + WIDTH/2;
 			var y = self.y - Player.list[selfId].y + HEIGHT/2;
+			
+		//	var pointer = new B(new V(x-width/2,y-height/2), width, height).toPolygon();
+		//	ctx.fillStyle = "red";
+		//	pointer.draw(ctx);
 			
 			ctx.globalAlpha = 0.25;
 			ctx.strokeStyle = self.color;
@@ -166,12 +298,42 @@
 	}
 	Mass.list = {};
 	
+	var getRotatedWidthHeight = function(player){
+		var width = player.width * 2;
+		var height = width;
+		var wth;
+		var hgt;
+			
+		if(player.launching){
+			wth = -width/2;
+			hgt = -height/2;
+		}else if((player.dir == 'left' && ((player.deg < -90 && player.deg >= -180) || (player.deg >= 180 && player.deg < 270))) || (player.dir == 'right' && ((player.deg <= -90 && player.deg > -180) || (player.deg > 180 && player.deg <= 270)))){
+			wth = 0;
+			hgt = 0;
+		}else if((player.dir == 'left' && ((player.deg < -180 && player.deg >= -270) || (player.deg >= 90 && player.deg < 180))) || (player.dir == 'right' && ((player.deg <= -180 && player.deg > -270) || (player.deg > 90 && player.deg <= 180)))){
+			wth = -width;
+			hgt = 0;
+		}else if((player.dir == 'left' && (((player.deg < -270 && player.deg >= -360) || player.deg == 0) || ((player.deg >= 0 && player.deg < 90) || player.deg == 360))) || (player.dir == 'right' && ((player.deg <= -270 && player.deg > -360) || (player.deg > 0 && player.deg <= 90)))){
+			wth = -width;
+			hgt = -height;
+		}else if((player.dir == 'left' && ((player.deg < 0 && player.deg >= -90) || (player.deg >= 270 && player.deg < 360))) || (player.dir == 'right' && ((player.deg <= 0) || (player.deg > 270 && player.deg <= 360)))){
+			wth = 0;
+			hgt = -height;
+		}
+		return {wth, hgt};
+	}
+	
+	socket.on('player', function(data){
+		let {wth, hgt} = getSATWidthHeight(data.box);
+		let {x, y} = data.box.getXY();
+		socket.emit('dimensions',{wth:wth,hgt:hgt,x:x,y:y});
+	});
+	
 	var selfId = null;
 
 	socket.on('init',function(data){	
 		if(data.selfId)
 			selfId = data.selfId;
-		//{ player : [{id:123,number:'1',x:0,y:0},{id:1,number:'2',x:0,y:0}], mass: []}
 		for(var i = 0 ; i < data.player.length; i++){
 			new Player(data.player[i]);
 		}
@@ -181,7 +343,6 @@
 	});
 	
 	socket.on('update',function(data){
-		//{ player : [{id:123,x:0,y:0},{id:1,x:0,y:0}], mass: []}
 		for(var i = 0 ; i < data.player.length; i++){
 			var pack = data.player[i];
 			var p = Player.list[pack.id];
@@ -192,8 +353,32 @@
 					p.y = pack.y;
 				if(pack.deg !== undefined)
 					p.deg = pack.deg;
-				if(pack.scale !== undefined)
-					p.scale = pack.scale;
+				if(pack.offset !== undefined)
+					p.offset = pack.offset;
+				if(pack.lastDeg !== undefined)
+					p.lastDeg = pack.lastDeg;
+				if(pack.pressingRight !== undefined)
+					p.pressingRight = pack.pressingRight;
+				if(pack.pressingSpace !== undefined)
+					p.pressingSpace = pack.pressingSpace;
+				if(pack.pressingLeft !== undefined)
+					p.pressingLeft = pack.pressingLeft;
+				if(pack.launching !== undefined)
+					p.launching = pack.launching;
+				if(pack.num !== undefined)
+					p.num = pack.num;
+				if(pack.nameOffset !== undefined)
+					p.nameOffset = pack.nameOffset;
+				if(pack.offsetX !== undefined)
+					p.offsetX = pack.offsetX;
+				if(pack.launched !== undefined)
+					p.launched = pack.launched;
+				if(pack.dir !== undefined)
+					p.dir = pack.dir;
+				if(pack.lastDir !== undefined)
+					p.lastDir = pack.lastDir;
+				if(pack.landed !== undefined)
+					p.landed = pack.landed;
 				if(pack.color !== undefined)
 					p.color = pack.color;	
 				if(pack.gameOver !== undefined)
@@ -223,10 +408,8 @@
 	});
 	
 	socket.on('remove',function(data){
-		//{player:[12323],mass:[12323,123123]}
 		for(var i = 0 ; i < data.player.length; i++){
-			delete Player.list[data.player[i]];
-			
+			delete Player.list[data.player[i]];	
 		}
 		for(var i = 0 ; i < data.mass.length; i++){
 			delete Mass.list[data.mass[i]];
@@ -236,7 +419,7 @@
 	setInterval(function(){
 		if(!selfId)
 			return;
-		ctx.clearRect(0,0,WIDTH,HEIGHT);
+		ctx.clearRect(-15000,-canvas.height*2,30000,canvas.height*5);
 		drawFloor();
 		drawScore();
 		for(var i in Player.list)
@@ -249,9 +432,9 @@
 		var player = Player.list[selfId];
 		var x = 0 - player.x;
 		var y = 0 - player.y;
-		var num = HEIGHT/2 + 262;
+		var num = HEIGHT/2 + 265;
 		ctx.fillStyle = '#101028';
-		ctx.fillRect(x,y + num,15000,500);
+		ctx.fillRect(-10000,y + num,30000,1500);
 		ctx.shadowBlur=20;
 		ctx.shadowColor="black";
 	}
@@ -262,7 +445,7 @@
 		lastScore = Player.list[selfId].score;
 		ctxUi.clearRect(0,0,500,500);
 		ctxUi.fillStyle = 'white';
-		ctxUi.fillText(Player.list[selfId].score,0,30);
+		ctxUi.fillText(Math.round(Player.list[selfId].score),0,30);
 	}
 	var lastScore = null;
 	
@@ -293,22 +476,23 @@
         var status = '<span class="title">Leaderboard</span>';
         for (var i = 0; i < leaderboard.length; i++) {
             status += '<br />';
-            if (leaderboard[i].id == Player.id){
+            if (leaderboard[i].id == selfId){
                 if(leaderboard[i].username.length !== 0)
                     status += '<span class="me">' + (i + 1) + '. ' + leaderboard[i].username + "</span>";
                 else
-                    status += '<span class="me">' + (i + 1) + ". An unnamed cube</span>";
+                    status += '<span class="me">' + (i + 1) + ". An unnamed square</span>";
             } else {
                 if(leaderboard[i].username.length !== 0)
                     status += (i + 1) + '. ' + leaderboard[i].username;
                 else
-                    status += (i + 1) + '. An unnamed cube';
+                    status += (i + 1) + '. An unnamed square';
             }
         }
         //status += '<br />Players: ' + data.players;
         document.getElementById('status').innerHTML = status;
     });	
-	
+
+
 	
 </script>
 </body>

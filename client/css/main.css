@@ -10,11 +10,10 @@ html, body {
     bottom:0;
     left:0;
     right:0;
+	z-index: 1;
 }
 
 html, body, canvas {
-    width: 100%;
-    height: 100%;
     margin: 0;
     padding: 0;
 }
@@ -49,7 +48,7 @@ div {
 #status {
     position: absolute;
     padding: 10px;
-    background: rgba(0, 0, 0, 0.4);
+    background-color: #110a28;
     color: #FFF;
     font-size: 16.1px;
     top: 10px;
@@ -63,8 +62,12 @@ div {
 }
 
 #status .me {
-    color: #FF8888;
+    color: #88ff95;
     font-size: 16.1px;
+}
+
+#blackBackground{
+	color: #000000;
 }
 
 #startMenuBackground {
@@ -177,8 +180,6 @@ div {
     -webkit-box-shadow: none;
     box-shadow: none;
 }
-
-body { padding: 2em; }
 
 
 /* Shared */
@@ -308,11 +309,9 @@ body { padding: 2em; }
 }
 
 #gameDiv {
-    position: absolute !important;
+    position: absolute;
     top: 0;
     left: 0;
-	width: 100%;
-	height: 100%;
 	margin: 0;
 	padding: 0;
 }
